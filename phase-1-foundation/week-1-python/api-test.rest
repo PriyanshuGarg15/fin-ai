@@ -1,1 +1,12 @@
 GET http://127.0.0.1:8000/health
+###
+POST http://127.0.0.1:8000/createLoanApplication
+Content-Type: application/json
+
+{
+  "mobileNo": "98139303",
+  "loan_type": "newcar",
+  "loan_amount": 10000,
+  "monthly_income": 100,
+  "credit_score": 850
+}

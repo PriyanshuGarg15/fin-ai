@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, field_validator
 from enum import Enum
 from typing import Optional
+from uuid import UUID, uuid4
 
 class LoanType(str, Enum):
     PERSONAL = "personal"
@@ -8,7 +9,7 @@ class LoanType(str, Enum):
     USEDCAR = "usedcar"
 
 class LoanApplicationRequest(BaseModel):
-    leadId: str = Field(..., description="Unique identifier for the loan application")
+    mobileNo: str = Field(..., description="Unique identifier for the applicant")
     loan_type: LoanType
     loan_amount: float =Field(..., gt=0, le=1000000)
     monthly_income: float =Field(..., gt=0 )
@@ -23,4 +24,7 @@ class LoanApplicationRequest(BaseModel):
         return v
 
 class loanApplicationResponse(BaseModel):
-    leadId: str = Field(..., description="Unique identifier for the loan application")
+    leadId: UUID = Field(...,
+        description="Unique identifier for the loan application"),
+    eligibility_score: float
+    message: str
