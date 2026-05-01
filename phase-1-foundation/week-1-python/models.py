@@ -28,3 +28,4 @@ class loanApplicationResponse(BaseModel):
         description="Unique identifier for the loan application"),
     eligibility_score: float
     message: str
+    status: str
