@@ -39,7 +39,8 @@ class AsyncHttpClient:
         retry=retry_if_exception_type(ServerError),
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=10),
-        before_sleep=before_sleep_log(logger, logging.WARNING)
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+        reraise=True
     )
     async def get(self, path: str, params: dict = None)->HTTPResponse: # (url: str):
         import time
@@ -50,7 +51,7 @@ class AsyncHttpClient:
             if response.status_code == 429:
                 raise RateLimitError(response.status_code, response.text, response.url)
             if response.status_code >= 500:
-                raise HTTPClientError(response.status_code, response.text, response.url)
+                raise ServerError(response.status_code, response.text, response.url)
             response.raise_for_status()
             return HTTPResponse(response.status_code, response.headers, response.json(), latency)
         except httpx.TimeoutException:

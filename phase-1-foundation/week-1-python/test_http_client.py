@@ -21,3 +21,18 @@ async def test_rate_limit_raises():
         async with AsyncHttpClient("https://example.com") as client:
             with pytest.raises(RateLimitError):
                 await client.get("/api")
+
+@pytest.mark.asyncio
+async def test_server_error_raises():
+    with patch("httpx.AsyncClient.get") as mock_get:
+        mock_response = AsyncMock()
+        mock_response.status_code = 500
+        mock_response.text = "Internal Server Error"
+        mock_response.url = "https://example.com/api"
+        mock_get.return_value = mock_response
+        async with AsyncHttpClient("https://example.com") as client:
+            with pytest.raises(ServerError):
+                await client.get("/api")
+        assert mock_get.call_count == 3
+
+# script poetry run pytest --log-cli-level=WARNING
