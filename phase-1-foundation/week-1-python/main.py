@@ -4,7 +4,6 @@ from models import LoanApplicationRequest, loanApplicationResponse
 from uuid import uuid4
 from logging_config import setup_logger, correlation_id_var
 from http_client import AsyncHttpClient
-import logging
 
 app = FastAPI(title="Fintech AI Platform", version="0.1.0")
 logger = setup_logger()

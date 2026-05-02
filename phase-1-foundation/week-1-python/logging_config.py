@@ -1,7 +1,6 @@
 import logging
 import json
 from contextvars import ContextVar
-import uuid
 
 correlation_id_var: ContextVar[str]= ContextVar("correlation_id", default='none')
 

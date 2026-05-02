@@ -18,9 +18,12 @@ class HTTPClientError(Exception):
         self.url = url
         super().__init__(f"HTTP Error {status_code}: {message} at {url}")
     
-class RateLimitError(HTTPClientError): pass
-class ServerError(HTTPClientError): pass
-class TimeoutError(HTTPClientError): pass
+class RateLimitError(HTTPClientError): 
+    pass
+class ServerError(HTTPClientError):
+    pass
+class TimeoutError(HTTPClientError):
+    pass
 
 class AsyncHttpClient:
     def __init__(self, base_url: str, timeoutSeconds: int=10):
@@ -42,18 +45,19 @@ class AsyncHttpClient:
         before_sleep=before_sleep_log(logger, logging.WARNING),
         reraise=True
     )
-    async def get(self, path: str, params: dict = None)->HTTPResponse: # (url: str):
+    async def get(self, path: str, params: Optional[dict] = None)->HTTPResponse: # (url: str):
         import time
         start= time.perf_counter()
         try:
+            assert self._client is not None
             response = await self._client.get(path, params=params)
             latency= (time.perf_counter() - start) *1000
             if response.status_code == 429:
-                raise RateLimitError(response.status_code, response.text, response.url)
+                raise RateLimitError(429, "Rate limited", f"{self.base_url}{path}")
             if response.status_code >= 500:
-                raise ServerError(response.status_code, response.text, response.url)
+                raise ServerError(response.status_code, response.text, str(response.url))
             response.raise_for_status()
-            return HTTPResponse(response.status_code, response.headers, response.json(), latency)
+            return HTTPResponse(response.status_code, dict(response.headers), response.json(), latency)
         except httpx.TimeoutException:
             raise TimeoutError(408, "Request timed out", f"{self.base_url}{path}")
 

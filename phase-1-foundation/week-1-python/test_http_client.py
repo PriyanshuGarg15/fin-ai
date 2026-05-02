@@ -1,6 +1,4 @@
 import pytest
-import pytest_asyncio
-import httpx
 from unittest.mock import AsyncMock, patch
 from http_client import AsyncHttpClient, ServerError, RateLimitError
 
