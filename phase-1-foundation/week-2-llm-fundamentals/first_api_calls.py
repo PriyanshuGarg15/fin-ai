@@ -9,13 +9,11 @@ from google.genai import types
 
 load_dotenv()
 
-grok_client= AsyncOpenAI(
-    api_key= os.getenv("GROQ_API_KEY"),
-    base_url="https://api.groq.com/openai/v1"
-)
-
+#Initializing LLM Clients
+grok_client= AsyncOpenAI(api_key= os.getenv("GROQ_API_KEY"), base_url="https://api.groq.com/openai/v1")
 gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
+#Using tiktoken for token counting
 def count_tokens_tiktoken(prompt, model= "gpt-4o")->int :
     encoding= tiktoken.encoding_for_model(model)
     return len(encoding.encode(prompt))
@@ -25,10 +23,9 @@ async def call_groq (prompt: str)->dict:
     response= await grok_client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": prompt}],
-
-
         max_tokens=200,
     )
+
     latency_ms= (time.perf_counter() - time_start) *1000
     in_tokens= response.usage.prompt_tokens
     out_tokens= response.usage.completion_tokens
@@ -73,19 +70,19 @@ async def call_gemini (prompt: str)->dict:
             
         )
     )
+    #Finding response finishin reason, becasue Gemini was cutting response abruptly.
     try:
         candidate = response.candidates[0]
-        # Handle enum string conversion for the new SDK
         finish_reason = candidate.finish_reason.name if hasattr(candidate.finish_reason, 'name') else str(candidate.finish_reason)
     except Exception:
         finish_reason = "UNKNOWN"
+    
     content = response.text+ f"\n\n[DIAGNOSTIC WARNING: Output cut off! Reason: {finish_reason}]"
     latency_ms= (time.perf_counter() - time_start) *1000
     usage = response.usage_metadata
     in_tokens = usage.prompt_token_count
     out_tokens = usage.candidates_token_count
     cost = (in_tokens * 0.075 + out_tokens * 0.30) / 1_000_000
-    print(response.text)
     return {
         "provider": "Gemini {model_id}",
         "input_tokens": in_tokens,
@@ -98,7 +95,6 @@ async def call_gemini (prompt: str)->dict:
 
 async def main():
     prompt = "A loan applicant has a credit score of 720, monthly income of INR 80,000, and is requesting INR 500,000. In one sentence, assess their eligibility."
-    
     print(f"Pre-call Tiktoken estimate: {count_tokens_tiktoken(prompt)} tokens")
     print(f"Running concurrent requests...\n")
     
