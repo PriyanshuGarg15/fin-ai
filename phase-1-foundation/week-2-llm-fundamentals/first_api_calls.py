@@ -31,8 +31,9 @@ async def call_groq(prompt: str) -> dict:
     )
 
     latency_ms = (time.perf_counter() - time_start) * 1000
-    in_tokens = response.usage.prompt_tokens
-    out_tokens = response.usage.completion_tokens
+    usage = response.usage
+    in_tokens = usage.prompt_tokens if usage else 0
+    out_tokens = usage.completion_tokens if usage else 0
     cost = (in_tokens * 0.05 + out_tokens * 0.08) / 1_000_000
 
     return {
@@ -56,42 +57,48 @@ async def call_gemini(prompt: str) -> dict:
             temperature=0.1,
             safety_settings=[
                 types.SafetySetting(
-                    category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"
+                    category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
                 ),
                 types.SafetySetting(
-                    category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"
+                    category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
                 ),
                 types.SafetySetting(
-                    category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_NONE"
+                    category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
                 ),
                 types.SafetySetting(
-                    category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_NONE"
+                    category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
                 ),
             ],
         ),
     )
     # Finding response finishin reason, becasue Gemini was cutting response abruptly.
     try:
-        candidate = response.candidates[0]
-        finish_reason = (
-            candidate.finish_reason.name
-            if hasattr(candidate.finish_reason, "name")
-            else str(candidate.finish_reason)
-        )
+        if response.candidates:
+            candidate = response.candidates[0]
+        if candidate.finish_reason:
+            finish_reason = (
+                candidate.finish_reason.name
+                if hasattr(candidate.finish_reason, "name")
+                else str(candidate.finish_reason)
+            )
     except Exception:
         finish_reason = "UNKNOWN"
 
     content = (
-        response.text
+        (response.text or "")
         + f"\n\n[DIAGNOSTIC WARNING: Output cut off! Reason: {finish_reason}]"
     )
     latency_ms = (time.perf_counter() - time_start) * 1000
     usage = response.usage_metadata
-    in_tokens = usage.prompt_token_count
-    out_tokens = usage.candidates_token_count
+    in_tokens = usage.prompt_token_count if usage else 0
+    out_tokens = usage.candidates_token_count if usage else 0
     cost = (in_tokens * 0.075 + out_tokens * 0.30) / 1_000_000
     return {
-        "provider": "Gemini {model_id}",
+        "provider": f"Gemini {model_id}",
         "input_tokens": in_tokens,
         "output_tokens": out_tokens,
         "latency_ms": round(latency_ms, 2),

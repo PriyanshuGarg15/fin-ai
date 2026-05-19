@@ -120,7 +120,8 @@ class LLMClient:
                 response = await self._call_provider(
                     self.fallback, prompt, system, None, max_tokens, temperature
                 )
-                self.usage.record(response)
+                if self.usage:  # Fix: Ensure usage exists before recording
+                    self.usage.record(response)
                 return response
             raise
 
@@ -149,15 +150,18 @@ class LLMClient:
                 max_tokens=max_tokens,
             )
             latency_ms = (time.perf_counter() - start) * 1000
+            usage = response.usage
+            input_tokens = usage.prompt_tokens if usage else 0
+            output_tokens = usage.completion_tokens if usage else 0
             return LLMResponse(
                 provider=provider,
-                input_tokens=response.usage.prompt_tokens,
-                output_tokens=response.usage.completion_tokens,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
                 latency_ms=latency_ms,
                 cost_usd=calculate_cost(
                     m, response.usage.prompt_tokens, response.usage.completion_tokens
                 ),
-                content=response.choices[0].message.content,
+                content=response.choices[0].message.content or "",
             )
         else:
             m = model or "gemini-2.5-flash"
@@ -171,15 +175,18 @@ class LLMClient:
                 ),
             )
             latency_ms = (time.perf_counter() - start) * 1000
+            usage=response.usage_metadata
+            input_tokens = usage.prompt_token_count if usage else 0
+            output_tokens = usage.candidates_token_count if usage else 0
             return LLMResponse(
                 provider=provider,
-                input_tokens=response.usage_metadata.prompt_token_count,
-                output_tokens=response.usage_metadata.candidates_token_count,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
                 latency_ms=latency_ms,
                 cost_usd=calculate_cost(
                     m,
-                    response.usage_metadata.prompt_token_count,
-                    response.usage_metadata.candidates_token_count,
+                    input_tokens,
+                    output_tokens,
                 ),
                 content=response.text,
             )
