@@ -18,4 +18,6 @@ Always respond in valid JSON only. No prose. No markdown. Exactly the schema req
 </output_format>"""
 
 VERSION = "2.0.0"
-DESCRIPTION = "XML-structured prompt with explicit self-employed haircut and rejection rules"
+DESCRIPTION = (
+    "XML-structured prompt with explicit self-employed haircut and rejection rules"
+)
